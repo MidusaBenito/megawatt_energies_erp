@@ -4,7 +4,7 @@ import base64
 
 from human_resource.models import Deduction, StaffProfile, staffPosition
 from human_resource.serializers import DeductionSerializer, StaffDeductionSchemeSerializer
-from system_administration.utils import generate_random_string, get_staff_profile_data, send_email_signup
+from system_administration.utils import generate_random_string, generateNextStaffNumber, get_staff_profile_data, send_email_signup
 from .models import *
 from .serializers import *
 from rest_framework.permissions import IsAuthenticated
@@ -95,7 +95,7 @@ def create_system_admin(request):
                     department_name="system_and_administration", department_description="Tasked with overseeing the ERP system's health, security, and performance, this department ensures that the organization's technology backbone operates seamlessly to meet business needs.")
                 #create staff profile
                 staff, created = StaffProfile.objects.get_or_create(
-                    user=new_user, staff_position=staff_position, email_address=new_user.username, company_branch=main_branch, company_department=department,has_read_write_priviledges=True,is_head_of_department=True)  # creates the system administrator role
+                    user=new_user, staff_position=staff_position, staff_number="MEL001",email_address=new_user.username, company_branch=main_branch, company_department=department,has_read_write_priviledges=True,is_head_of_department=True)  # creates the system administrator role
                 #create default deduction schemes
                 # create default deduction schemes
                 # paye
@@ -114,7 +114,7 @@ def create_system_admin(request):
                 date_effective_from = datetime(current_year, 7, 1)
                 date_effective_to = datetime(current_year+2, 1, 1)
                 shif_deduction_serializer = DeductionSerializer(data={'company_profile': company_profile.id, 'deduction_title': "SHIF", 'deduction_description': "Social Health Insurance Fund", 'deduction_type': "insurance",
-                                                                      'deduction_value': "2.75", 'deduction_module': "percentage", 'date_effective_from': date_effective_from.date(), 'date_effective_to': date_effective_to.date(), 'created_by': staff.id, 'last_updated_by': staff.id})
+                                                                      'deduction_value': "0.00", 'deduction_module': "percentage", 'date_effective_from': date_effective_from.date(), 'date_effective_to': date_effective_to.date(), 'created_by': staff.id, 'last_updated_by': staff.id})
                 if shif_deduction_serializer.is_valid():
                     shif_deduction_instance = shif_deduction_serializer.save()
                 else:
@@ -125,7 +125,7 @@ def create_system_admin(request):
                 date_effective_from = datetime(current_year, 1, 1)
                 date_effective_to = datetime(current_year+2, 1, 1)
                 nssf_deduction_serializer = DeductionSerializer(data={'company_profile': company_profile.id, 'deduction_title': "NSSF", 'deduction_description': "Pension Contribution", 'deduction_type': "pension",
-                                                                      'deduction_value': "2,160", 'deduction_module': 'other', 'date_effective_from': date_effective_from.date(), 'date_effective_to': date_effective_to.date(), 'created_by': staff.id, 'last_updated_by': staff.id})
+                                                                      'deduction_value': "0.00", 'deduction_module': 'other', 'date_effective_from': date_effective_from.date(), 'date_effective_to': date_effective_to.date(), 'created_by': staff.id, 'last_updated_by': staff.id})
                 if nssf_deduction_serializer.is_valid():
                     nssf_deduction_instance = nssf_deduction_serializer.save()
                 else:
@@ -497,8 +497,13 @@ def create_super_hr_user(request):
                     department_name="human_resource_management")
                 # print(main_branch)
                 # print(department)
+                #generate staffnumber for the superhr
+                time_stamp = datetime.now()
+                numberReg = re.sub(
+                    r'[^0-9]', '', time_stamp.strftime('%M'))
+                staff_number = "MEL"+f'{user.id}'+numberReg
                 staff, created = StaffProfile.objects.get_or_create(
-                    user=new_user, staff_position=staff_position, email_address=new_user.username, company_branch=main_branch, company_department=department, has_read_write_priviledges=True, is_head_of_department=True,is_super_admin=True)  # creates the system administrator role
+                    user=new_user, staff_position=staff_position, email_address=new_user.username, staff_number=staff_number,company_branch=main_branch, company_department=department, has_read_write_priviledges=True, is_head_of_department=True, is_super_admin=True)  # creates the system administrator role
                 #print("running well")
                 company_profile.company_super_hr_created = True
                 company_profile.save()
@@ -571,8 +576,9 @@ def create_other_staff_user(request):
                 user.is_staff = True
                 user.save()
                 new_user = authenticate(username=email, password=password)
+                staff_number = generateNextStaffNumber(company_profile.id)
                 staff, created = StaffProfile.objects.get_or_create(
-                    user=new_user, email_address=new_user.username,)
+                    user=new_user, email_address=new_user.username, staff_number=staff_number)
                 # create default deduction schemes for the super hr
                 # retrive paye
                 paye_scheme = Deduction.objects.get(
@@ -617,8 +623,8 @@ def create_other_staff_user(request):
                 return Response({"message": "Unable to create user account", }, status=406)
         else:
             return Response({"message": "You are unauthorized to perform this action", }, status=401)
-    except:  # Exception as e:
-        # print(e)
+    except:# Exception as e:
+        #print(e)
         return Response({"message": "Error creating user account", }, status=500)
         
 

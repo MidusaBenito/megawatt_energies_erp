@@ -5,6 +5,8 @@ from django.core.mail import send_mail
 import random
 import string
 
+from human_resource.models import StaffProfile
+
 
 def send_email_signup(request, message, recipient_list):
     subject = 'Successfully registered'
@@ -126,6 +128,39 @@ def convertTo24HRFormat(time_string):
     time_object_24hr = datetime.strptime(
         f'{hour_24hr:02d}:{minute:02d}', '%H:%M').time()
     return time_object_24hr
+
+#to be added
+def generateNextStaffNumber(company_id):
+    all_staff = StaffProfile.objects.all()
+    largest_id = 0
+    staff_to_use = None
+    newNumber = 'MEL000'
+    superHrNumber = ''
+    for staff in all_staff:
+        if staff.company_branch.company_profile.id == company_id:
+            if staff.id > largest_id and staff.is_super_admin != True:
+                largest_id = staff.id
+                staff_to_use = staff
+        if staff.is_super_admin:
+            superHrNumber = staff.staff_number
+            superHrNumber = superHrNumber[3:]
+    if staff_to_use is not None:
+        staff_number = staff_to_use.staff_number
+        stripped_string = staff_number[3:]
+        #print(stripped_string)
+        newSuffix = int(stripped_string) + 1
+        if int(superHrNumber) == newSuffix:
+            newSuffix += 1
+        if newSuffix <10:
+            newNumber = f'MEL00{newSuffix}'
+        elif newSuffix < 100:
+            newNumber = f'MEL0{newSuffix}'
+        else:
+            newNumber = f'MEL{newSuffix}'
+    return newNumber
+
+
+
 
 
     

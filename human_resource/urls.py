@@ -39,4 +39,5 @@ urlpatterns = [
          views.edit_training_record),
     path('create-payroll-sheet/',
          views.create_payroll_sheet),
+    path('edit-payroll-sheet/', views.edit_payroll_sheet),
 ]

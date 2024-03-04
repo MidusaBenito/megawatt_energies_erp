@@ -97,12 +97,12 @@ class StaffProfile(models.Model):
         verbose_name = "Staff Profile"
         verbose_name_plural = "Staff Profiles"
 
-    def save(self, *args, **kwargs):
-        if not self.pk:
-            numberReg = re.sub(
-                r'[^0-9]', '', self.timestamp.strftime('%M'))
-            self.staff_number = "ME"+f'{self.user.id}'+numberReg
-        super().save(*args, **kwargs)
+    # def save(self, *args, **kwargs):   #marked for change
+    #     if not self.pk:
+    #         numberReg = re.sub(
+    #             r'[^0-9]', '', self.timestamp.strftime('%M'))
+    #         self.staff_number = "MEL"+f'{self.user.id}'+numberReg
+    #     super().save(*args, **kwargs)
 
 class Deduction(models.Model):
     company_profile = models.ForeignKey(
@@ -305,6 +305,9 @@ class StaffPayrollInstance(models.Model):
     recycle_bin = models.BooleanField(default=False)
     created_on = models.DateTimeField(auto_now_add=True)
     last_updated_on = models.DateTimeField(auto_now=True)
+    is_prorated = models.BooleanField(default=False)
+    pro_rate_factor = models.CharField(
+        max_length=12, default="1.00", blank=False)
 
 #additional models
 class Task(models.Model):

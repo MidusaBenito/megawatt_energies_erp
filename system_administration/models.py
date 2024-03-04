@@ -9,7 +9,7 @@ import re
 class CompanyProfile(models.Model):
     company_name = models.CharField(max_length=100, default="", blank=True)
     company_serial_number = models.CharField(
-        max_length=100, default="", blank=True,unique=True, editable=False)
+        max_length=100, default="", blank=True,unique=True, editable=True)
     company_description = models.CharField(
         max_length=500, default="", blank=True)
     company_postal_address = models.CharField(

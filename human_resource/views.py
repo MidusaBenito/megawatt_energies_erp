@@ -302,6 +302,7 @@ def human_resource_dashboard(request):
                             for payroll_instance in payroll_instances:
                                 if payroll_instance.recycle_bin == False:
                                     payroll_instance_map = {}
+                                    payroll_instance_map["payroll_instance_id"] = str(payroll_instance.id)
                                     payroll_instance_map["staff_id"] = str(
                                         payroll_instance.staff_profile.id)
                                     deduction_instances = payroll_instance.deduction_instance.all()
@@ -386,6 +387,8 @@ def human_resource_dashboard(request):
                                                 commission_sheet_instance_map)
                                     payroll_instance_map["payroll_instance_commissions_list"] = payroll_instance_commissions_list
                                     payroll_instance_map["commissions_total"] = payroll_instance.commissions_total
+                                    payroll_instance_map["is_prorated"] = "true" if payroll_instance.is_prorated == True else "false"
+                                    payroll_instance_map["pro_rate_factor"] = payroll_instance.pro_rate_factor
                                     #
                                     staff_map = {}
                                     staff_map["staff_id"] = str(
@@ -523,8 +526,8 @@ def human_resource_dashboard(request):
             return Response({"message": "true", "payload": payload}, status=200)
         else:
             return Response({"message": "false", "payload": payload}, status=401)
-    except Exception as e:
-        print(e)
+    except:# Exception as e:
+        #print(e)
         return Response({"message": "false", "payload": payload}, status=500)
 
 
@@ -1219,6 +1222,8 @@ def create_payroll_sheet(request):
             if payroll_sheet_serializer.is_valid():
                 new_payroll_sheet = payroll_sheet_serializer.save()
                 for payrollSheetInstance in payrollSheetInstancesList:
+                    staff_on_payroll = StaffProfile.objects.get(
+                        id=int(payrollSheetInstance["staff_id"]))
                     bonus_instance_list = payrollSheetInstance["bonus_instance_list"]
                     payroll_sheet_bonus_instances_ids_list = []
                     for bonus in bonus_instance_list:
@@ -1234,7 +1239,7 @@ def create_payroll_sheet(request):
                             #create bonus scheme if it does not exist
                             validBonusInstance = Bonus.objects.get(id=int(bonus_id))
                             staff_bonus_scheme, created = StaffBonusScheme.objects.get_or_create(
-                                staff_profile=staff_profile, bonus=validBonusInstance)
+                                staff_profile=staff_on_payroll, bonus=validBonusInstance)
                     #all bonus instances for this payroll sheet are created
                     deduction_instance_list = payrollSheetInstance["deduction_instance_list"]
                     #print(f'Deduction instance list: {deduction_instance_list}')
@@ -1252,13 +1257,12 @@ def create_payroll_sheet(request):
                             #create deduction scheme if it does not exist
                             validDeductionInstance = Deduction.objects.get(id=int(deduction_id))
                             staff_deduction_scheme, created = StaffDeductionScheme.objects.get_or_create(
-                                staff_profile=staff_profile, deduction=validDeductionInstance)
+                                staff_profile=staff_on_payroll, deduction=validDeductionInstance)
                         else:
                             pass
                             #print(deduction_instance_serializer.errors)
                     # all deduction instances for this payroll sheet are created
                     #creating the payroll instance
-                    staff_on_payroll = StaffProfile.objects.get(id=int(payrollSheetInstance["staff_id"]))
                     gross_salary = payrollSheetInstance["gross_salary"]
                     commissions_total = payrollSheetInstance["commissions_total"]
                     payroll_sheet_total_commission_value += float(commissions_total.replace(',', ''))
@@ -1282,7 +1286,145 @@ def create_payroll_sheet(request):
                 return Response({"message": "Unable to create payroll sheet", }, status=406)
         else:
             return Response({"message": "You are unauthorised to perform this action", }, status=401)
-    except:# Exception as e:
+    except: #Exception as e:
         #print(e)
         return Response({"message": "Error creating payroll sheet", }, status=500)
+    
+@api_view(['POST'])
+@authentication_classes([TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def edit_payroll_sheet(request):
+    company_serial_number = request.data["serial_number"]
+    company_branch_id = request.data["company_branch_id"]
+    payroll_sheet_id_to_edit = request.data["payroll_sheet_id_to_edit"]
+    payroll_sheet_title = request.data["payroll_sheet_title"]
+    payroll_sheet_description = request.data["payroll_sheet_description"]
+    payroll_sheet_for_the_month_of = request.data["payroll_sheet_for_the_month_of"]
+    payroll_sheet_for_the_year = request.data["payroll_sheet_for_the_year"]
+    #calculate sheet value
+    #grab payroll instances data
+    payrollSheetInstancesList = request.data.get(
+        'payrollSheetInstancesList', [])
+    payrollSheetInstancesList = json.loads(payrollSheetInstancesList)
+    try:
+        payroll_sheet_value = 0.00
+        payroll_sheet_total_net_pay_value = 0.00
+        payroll_sheet_total_bonus_value = 0.00
+        payroll_sheet_total_deduction_value = 0.00
+        payroll_sheet_total_commission_value = 0.00
+        company_profile = CompanyProfile.objects.get(
+            company_serial_number=company_serial_number)
+        company_branch = CompanyBranch.objects.get(id=int(company_branch_id))
+        staff_profile = StaffProfile.objects.get(user=request.user)
+        if staff_profile.company_department.department_name == "human_resource_management" and staff_profile.is_head_of_department == True and staff_profile.has_read_write_priviledges == True and company_profile:
+            payroll_sheet_to_edit = PayrollSheet.objects.get(
+                id=int(payroll_sheet_id_to_edit))
+            payroll_sheet_serializer = PayrollSheetSerializer(instance=payroll_sheet_to_edit,
+                data={'company_profile': company_profile.id, 'company_branch': company_branch.id, 'payroll_sheet_title': payroll_sheet_title, 'payroll_sheet_description': payroll_sheet_description, 'payroll_sheet_for_the_month_of': payroll_sheet_for_the_month_of, 'payroll_sheet_for_the_year': payroll_sheet_for_the_year, 'created_by': staff_profile.id, 'last_updated_by': staff_profile.id})
+            if payroll_sheet_serializer.is_valid():
+                new_payroll_sheet = payroll_sheet_serializer.save()
+                for payrollSheetInstance in payrollSheetInstancesList:
+                    staff_on_payroll = StaffProfile.objects.get(
+                        id=int(payrollSheetInstance["staff_id"]))
+                    bonus_instance_list = payrollSheetInstance["bonus_instance_list"]
+                    payroll_sheet_bonus_instances_ids_list = []
+                    for bonus in bonus_instance_list:
+                        bonusInstanceExist = False
+                        bonus_id = bonus["bonus_id"]
+                        bonus_instance_value = bonus["bonus_instance_value"]
+                        bonus_instances_data = new_payroll_sheet.bonus_instance.all()
+                        existing_bonus_instance = None
+                        for bonus_instance_detail in bonus_instances_data:
+                            if bonus_instance_detail.bonus.id == int(bonus_id):
+                                bonusInstanceExist = True
+                                existing_bonus_instance = bonus_instance_detail
+                                break
+                        if bonusInstanceExist == True:
+                            bonus_instance_serializer = BonusInstanceSerializer(instance=existing_bonus_instance,data={'bonus_instance_value': bonus_instance_value,'last_updated_by': staff_profile.id})
+                        else:
+                            bonus_instance_serializer = BonusInstanceSerializer(data={'bonus': int(
+                                bonus_id), 'bonus_instance_value': bonus_instance_value, 'created_by': staff_profile.id, 'last_updated_by': staff_profile.id})
+                        if bonus_instance_serializer.is_valid():
+                            new_bonus_instance = bonus_instance_serializer.save()
+                            payroll_sheet_bonus_instances_ids_list.append(
+                                new_bonus_instance.id)#will check to delete non_retained bonus instances
+                            payroll_sheet_total_bonus_value += float(
+                                bonus_instance_value.replace(',', ''))
+                            # create bonus scheme if it does not exist
+                            validBonusInstance = Bonus.objects.get(
+                                id=int(bonus_id))
+                            staff_bonus_scheme, created = StaffBonusScheme.objects.get_or_create(
+                                staff_profile=staff_on_payroll, bonus=validBonusInstance)
+                    # all bonus instances for this payroll sheet are created
+                    deduction_instance_list = payrollSheetInstance["deduction_instance_list"]
+                    # print(f'Deduction instance list: {deduction_instance_list}')
+                    payroll_sheet_deduction_instances_ids_list = []
+                    for deduction in deduction_instance_list:
+                        deductionInstanceExist = False
+                        deduction_id = deduction["deduction_id"]
+                        deduction_instance_value = deduction["deduction_value"]
+                        deduction_instances_data = new_payroll_sheet.deduction_instance.all()
+                        existing_deduction_instance = None
+                        for deduction_instance_detail in deduction_instances_data:
+                            if deduction_instance_detail.id == int(deduction_id):
+                                deductionInstanceExist = True
+                                existing_deduction_instance = deduction_instance_detail
+                                break
+                            if deductionInstanceExist == True:
+                                deduction_instance_serializer = DeductionInstanceSerializer(instance=existing_deduction_instance,
+                                data={'deduction_instance_value': deduction_instance_value, 'created_by': staff_profile.id,})
+                            else:
+                                deduction_instance_serializer = DeductionInstanceSerializer(
+                                    data={'deduction': int(deduction_id), 'deduction_instance_value': deduction_instance_value, 'created_by': staff_profile.id, 'last_updated_by': staff_profile.id})
+                            if deduction_instance_serializer.is_valid():
+                                new_deduction_instance = deduction_instance_serializer.save()
+                                payroll_sheet_deduction_instances_ids_list.append(
+                                    new_deduction_instance.id)
+                                payroll_sheet_total_deduction_value += float(
+                                    deduction_instance_value.replace(',', ''))
+                                # create deduction scheme if it does not exist
+                                validDeductionInstance = Deduction.objects.get(
+                                    id=int(deduction_id))
+                                staff_deduction_scheme, created = StaffDeductionScheme.objects.get_or_create(
+                                    staff_profile=staff_on_payroll, deduction=validDeductionInstance)
+                    payroll_instance_id = payrollSheetInstance["payroll_instance_id"]
+                    gross_salary = payrollSheetInstance["gross_salary"]
+                    commissions_total = payrollSheetInstance["commissions_total"]
+                    payroll_sheet_total_commission_value += float(
+                        commissions_total.replace(',', ''))
+                    payroll_sheet_value += float(gross_salary.replace(',', ''))
+                    net_salary = payrollSheetInstance["net_salary"]
+                    payroll_sheet_total_net_pay_value += float(
+                        net_salary.replace(',', ''))
+                    is_prorated = True if payrollSheetInstance["is_prorated"] == "true" else False
+                    pro_rate_factor = payrollSheetInstance["pro_rate_factor"]
+                    #get the payrollsheetinstance instance to edit
+                    if len(payroll_instance_id) > 0:
+
+                        get_payroll_sheet_instance = StaffPayrollInstance.objects.get(id=int(payroll_instance_id))
+                        edited_payroll_sheet_instance_serializer = StaffPayrollInstanceSerializer(instance=get_payroll_sheet_instance,data={'deduction_instance': payroll_sheet_deduction_instances_ids_list,
+                                                                                                'gross_salary': gross_salary, 'bonus_instance': payroll_sheet_bonus_instances_ids_list, 'commissions_total': commissions_total,'is_prorated':is_prorated,'pro_rate_factor':pro_rate_factor, 'net_salary': net_salary, 'last_updated_by': staff_profile.id})
+                        if edited_payroll_sheet_instance_serializer.is_valid():
+                            edited_payroll_sheet_instance_serializer.save()
+                    else:
+                        created_payroll_sheet_instance_serializer = StaffPayrollInstanceSerializer(data={'staff_profile':staff_on_payroll.id,'payroll_sheet':new_payroll_sheet.id,'deduction_instance':payroll_sheet_deduction_instances_ids_list,'gross_salary':gross_salary,'bonus_instance':payroll_sheet_bonus_instances_ids_list,'commissions_total':commissions_total,'net_salary':net_salary,'created_by': staff_profile.id, 'last_updated_by': staff_profile.id})
+                        if created_payroll_sheet_instance_serializer.is_valid():
+                            created_payroll_sheet_instance_serializer.save()
+                new_payroll_sheet.payroll_sheet_value = f'{payroll_sheet_value}'
+                new_payroll_sheet.payroll_sheet_total_net_pay_value = f'{payroll_sheet_total_net_pay_value}'
+                new_payroll_sheet.payroll_sheet_total_bonus_value = f'{payroll_sheet_total_bonus_value}'
+                new_payroll_sheet.payroll_sheet_total_deduction_value = f'{payroll_sheet_total_deduction_value}'
+                new_payroll_sheet.payroll_sheet_total_commission_value = f'{payroll_sheet_total_commission_value}'
+                new_payroll_sheet.save()
+                # successful creation
+                return Response({"message": "Payroll sheet edited successfully", }, status=200)
+            else:
+                #print(payroll_sheet_serializer.errors)
+                return Response({"message": "Unable to edit payroll sheet", }, status=406)
+        else:
+            return Response({"message": "You are unauthorised to perform this action", }, status=401)
+    except: #Exception as e:
+        #print(e)
+        return Response({"message": "Error editing payroll sheet", }, status=500)
+
 
