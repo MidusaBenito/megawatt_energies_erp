@@ -206,7 +206,9 @@ def staff_login(request):
     payload["user_role"] = ""
     try:
         staff_profile = StaffProfile.objects.get(staff_number=staff_number)
+        #print(staff_profile.user.password)
         username = staff_profile.user.username
+        #print(username)
         user = authenticate(request, username=username, password=password)
         if user is not None:
             login(request, user)
@@ -220,7 +222,8 @@ def staff_login(request):
             return Response({"message": "Login successful","payload":payload }, status=200)
         else:
             return Response({"message": "Invalid credentials", "payload": payload}, status=406)
-    except:
+    except Exception as e:
+        print(e)
         return Response({"message": "Invalid credentials", "payload": payload}, status=500)
     
 
@@ -332,6 +335,9 @@ def system_admin_dashboard(request):
                             staff_map["banking_institution_name"] = staff.banking_institution_name
                             staff_map["bank_account_name"] = staff.bank_account_name
                             staff_map["bank_account_number"] = staff.bank_account_number
+                            staff_map["bank_branch_name"] = staff.bank_branch_name
+                            staff_map["bank_branch_code"] = staff.bank_branch_code
+                            staff_map["bank_swift_code"] = staff.bank_swift_code
                             staff_map["nhif_number"] = staff.nhif_number
                             staff_map["nhif_additional_info"] = staff.nhif_additional_info
                             staff_map["nssf_number"] = staff.nssf_number
@@ -345,6 +351,7 @@ def system_admin_dashboard(request):
                             staff_map["staff_leaves_list"] = []
                             staff_map["staff_bonus_schemes_list"] = []
                             staff_map["staff_deduction_schemes_list"] = []
+                            staff_map["personal_email"] = staff.personal_email #added
                             #end
                             company_branch_staffs_list.append(staff_map)
                     branch_map["branch_staff_profiles"] = company_branch_staffs_list

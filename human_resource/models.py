@@ -71,6 +71,14 @@ class StaffProfile(models.Model):
         max_length=100, default="", blank=True)
     bank_account_number = models.CharField(
         max_length=100, default="", blank=True)
+    #added banking details
+    bank_branch_name = models.CharField(
+        max_length=100, default="", blank=True)
+    bank_branch_code = models.CharField(
+        max_length=100, default="", blank=True)
+    bank_swift_code = models.CharField(
+        max_length=100, default="", blank=True)
+    #end
     nhif_number = models.CharField(max_length=30, default="", blank=True)
     nhif_additional_info = models.CharField(max_length=500, default="", blank=True)
     nssf_number = models.CharField(max_length=30, default="", blank=True)
@@ -90,6 +98,8 @@ class StaffProfile(models.Model):
     # email_verification_code = models.CharField(max_length=6,null=True,blank=True)
     created_on = models.DateTimeField(auto_now_add=True)
     last_updated_on = models.DateTimeField(auto_now=True)
+    #added
+    personal_email = models.EmailField(blank=True,default="",max_length=100,)
     timestamp = models.DateTimeField(default=timezone.now) #must be included for all models requiring numbers generation
 
     class Meta:
@@ -197,7 +207,7 @@ class StaffLeave(models.Model):
     staff_profile = models.ForeignKey(
         StaffProfile, null=True, on_delete=models.SET_NULL, related_name="staff_leave_instances")
     leave_type_choices = [
-        ("sick_leave", "Sick Leave"), ("vacation_leave", "Vacation Leave"), ("maternity_leave", "Maternity Leave"), ("paternity_leave", "Paternity Leave"), ("medical_leave", "Medical Leave"), ("bereavement_leave", "Bereavement Leave"), ("other", "Other"), ("not_selected", "Not Selected")]
+        ("sick_leave", "Sick Leave"), ("annual_leave", "Annual Leave"), ("vacation_leave", "Vacation Leave"), ("maternity_leave", "Maternity Leave"), ("paternity_leave", "Paternity Leave"), ("medical_leave", "Medical Leave"), ("bereavement_leave", "Bereavement Leave"), ("other", "Other"), ("not_selected", "Not Selected")]
     leave_type = models.CharField(
         max_length=20, choices=leave_type_choices, default="not_selected", blank=False)
     leave_description = models.CharField(

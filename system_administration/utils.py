@@ -47,6 +47,11 @@ def get_staff_profile_data(userActive):
         staff_profile_data["banking_institution_name"] = userActive.user_staff_profile.banking_institution_name
         staff_profile_data["bank_account_name"] = userActive.user_staff_profile.bank_account_name
         staff_profile_data["bank_account_number"] = userActive.user_staff_profile.bank_account_number
+        #added banking institution
+        staff_profile_data["bank_branch_name"] = userActive.user_staff_profile.bank_branch_name
+        staff_profile_data["bank_branch_code"] = userActive.user_staff_profile.bank_branch_code
+        staff_profile_data["bank_swift_code"] = userActive.user_staff_profile.bank_swift_code
+        #end
         staff_profile_data["nhif_number"] = userActive.user_staff_profile.nhif_number
         staff_profile_data["nhif_additional_info"] = userActive.user_staff_profile.nhif_additional_info
         staff_profile_data["nssf_number"] = userActive.user_staff_profile.nssf_number
@@ -66,6 +71,8 @@ def get_staff_profile_data(userActive):
         staff_profile_data["staff_leaves_list"] = []
         staff_profile_data["staff_bonus_schemes_list"] = []
         staff_profile_data["staff_deduction_schemes_list"] = []
+        #added
+        staff_profile_data["personal_email"] = userActive.user_staff_profile.personal_email
     else:
         staff_profile_data["email_address"] = ""
         staff_profile_data["staff_id"] = ""
@@ -95,6 +102,9 @@ def get_staff_profile_data(userActive):
         staff_profile_data["userActive.user_staff_profile"] = ""
         staff_profile_data["bank_account_name"] = ""
         staff_profile_data["bank_account_number"] = ""
+        staff_profile_data["bank_branch_name"] = ""
+        staff_profile_data["bank_branch_code"] = ""
+        staff_profile_data["bank_swift_code"] = ""
         staff_profile_data["nhif_number"] = ""
         staff_profile_data["nhif_additional_info"] = ""
         staff_profile_data["nssf_number"] = ""
@@ -108,6 +118,7 @@ def get_staff_profile_data(userActive):
         staff_profile_data["staff_leaves_list"] = []
         staff_profile_data["staff_bonus_schemes_list"] = []
         staff_profile_data["staff_deduction_schemes_list"] = []
+        staff_profile_data["personal_email"] = ""
     return staff_profile_data
 
 

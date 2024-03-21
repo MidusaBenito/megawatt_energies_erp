@@ -7,7 +7,7 @@ from django.utils import timezone
 import re
 from human_resource.models import StaffProfile
 
-from system_administration.models import CompanyProfile
+from system_administration.models import CompanyBranch, CompanyProfile
 from warehouse_management.models import Product, PurchaseRequisition, PurchaseRequisitionInstance, StockRequisitionInstance
 
 class Supplier(models.Model):
@@ -30,6 +30,13 @@ class Supplier(models.Model):
     recycle_bin = models.BooleanField(default=False)
     created_on = models.DateTimeField(auto_now_add=True)
     last_updated_on = models.DateTimeField(auto_now=True)
+
+    # def save(self, *args, **kwargs):
+    #     if not self.pk:
+    #         numberReg = re.sub(
+    #             r'[^0-9]', '', self.timestamp.strftime('%Y-%m-%d %H:%M:%S'))
+    #         self.purchase_order_number = "SP"+numberReg
+    #     super().save(*args, **kwargs)
 
 class PurchaseOrder(models.Model):
     purchase_order_number = models.CharField(
@@ -71,6 +78,7 @@ class ProductPurchaseInstance(models.Model):
     purchase_amount_paid_to_supplier = models.CharField(max_length=15, default="0.00",)
     supplier_payment_settled = models.BooleanField(default=False)
     product_purchase_delivered = models.BooleanField(default=False)
+    quantity_purchased = models.CharField(max_length=15, default="0",)
     quantity_delivered = models.CharField(max_length=15, default="0",)
     created_by = models.ForeignKey(
         StaffProfile, null=True, on_delete=models.SET_NULL, related_name="product_purchase_instance_created_by")
@@ -86,7 +94,9 @@ class ProductPurchaseInstance(models.Model):
         verbose_name_plural = "Product Purchase Instances"
 
 
-class StockOrder(models.Model): #only applicable to subsidiary procurement departments
+class StockOrder(models.Model): #only applicable to subsidiary procurement departments, the main procurement can just read and approve it
+    company_branch = models.ForeignKey(
+        CompanyBranch, null=True, on_delete=models.SET_NULL, related_name="branch_stock_orders")
     stock_order_number = models.CharField(max_length=50, unique=True,default="")
     stock_order_approved = models.BooleanField(default=False) #approved by head of procurement of the main branch
     created_by = models.ForeignKey(
@@ -126,6 +136,7 @@ class StockOrderInstance(models.Model):
     #     max_length=15, default="0.00",)
     # supplier_payment_settled = models.BooleanField(default=False)
     stock_order_item_delivered = models.BooleanField(default=False)
+    quantity_ordered = models.CharField(max_length=15, default="0",)
     quantity_delivered = models.CharField(max_length=15, default="0",)
     created_by = models.ForeignKey(
         StaffProfile, null=True, on_delete=models.SET_NULL, related_name="stock_order_instance_created_by")

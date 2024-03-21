@@ -31,6 +31,7 @@ def human_resource_dashboard(request):
     work_shifts_list = []
     company_departments_list = []
     company_branches_list = []
+    company_profile_map = {}
     current_date = datetime.now().date()
     try:
         company_profile = CompanyProfile.objects.get(
@@ -38,9 +39,13 @@ def human_resource_dashboard(request):
         #
         staff_profile = StaffProfile.objects.get(user=request.user)
         if staff_profile.company_department.department_name == "human_resource_management" and staff_profile.is_head_of_department == True and staff_profile.has_read_write_priviledges == True and company_profile:
-        #
+        #   
+            company_profile_map["company_name"] = company_profile.company_name
+            company_profile_map["company_postal_address"] = company_profile.company_postal_address
+            company_profile_map["company_country_location"] = company_profile.company_country_location
+            company_profile_map["company_phone"] = company_profile.company_phone
             active_staff_profile_data = get_staff_profile_data(active_user)
-            company_departments = company_profile.company_departments.all()
+            company_departments = company_profile.company_departments.all().order_by('-id')
             for department in company_departments:
                 if department.recycle_bin == False:
                     department_map = {}
@@ -52,7 +57,7 @@ def human_resource_dashboard(request):
                     department_map["last_updated_on"] = datetime.strftime(
                         department.last_updated_on, date_format)
                     company_departments_list.append(department_map)
-            company_branches = company_profile.company_branches.all()
+            company_branches = company_profile.company_branches.all().order_by('-id')
             #criteria = {"company_profile": company_profile}
             if staff_profile.is_super_admin != True:
                 #criteria = {"main_branch": False}
@@ -73,7 +78,7 @@ def human_resource_dashboard(request):
                     #company_branches_list.append(branch_map)
                     #branch users
                     company_branch_staffs_list = []
-                    branch_staffs = branch.company_branch_staffs.all()
+                    branch_staffs = branch.company_branch_staffs.all().order_by('-id')
                     for staff in branch_staffs:
                         if staff.recycle_bin == False:
                             time_sheets_list = []
@@ -111,15 +116,21 @@ def human_resource_dashboard(request):
                             staff_map["banking_institution_name"] = staff.banking_institution_name
                             staff_map["bank_account_name"] = staff.bank_account_name
                             staff_map["bank_account_number"] = staff.bank_account_number
+                            #added bank details
+                            staff_map["bank_branch_name"] = staff.bank_branch_name
+                            staff_map["bank_branch_code"] = staff.bank_branch_code
+                            staff_map["bank_swift_code"] = staff.bank_swift_code
+                            #end
                             staff_map["nhif_number"] = staff.nhif_number
                             staff_map["nhif_additional_info"] = staff.nhif_additional_info
                             staff_map["nssf_number"] = staff.nssf_number
                             staff_map["nssf_additional_info"] = staff.nssf_additional_info
                             staff_map["staff_additional_info"] = staff.staff_additional_info
+                            staff_map["personal_email"] = staff.personal_email
                             staff_map["basic_salary"] = staff.basic_salary
                             staff_map["currency"] = company_profile.company_preferred_currency
                             #end
-                            time_sheets = staff.staff_time_sheets.all()
+                            time_sheets = staff.staff_time_sheets.all().order_by('-id')
                             for time_sheet in time_sheets:
                                 if time_sheet.recycle_bin == False:
                                     time_sheet_map = {}
@@ -135,7 +146,7 @@ def human_resource_dashboard(request):
                                     time_sheets_list.append(time_sheet_map)
                             staff_map["time_sheets_list"] = time_sheets_list
                             #adding extra data points
-                            education_qualifications = staff.staff_education_qualifications.all()
+                            education_qualifications = staff.staff_education_qualifications.all().order_by('-id')
                             for education_qualification in education_qualifications:
                                 education_qualification_map = {}
                                 education_qualification_map["education_qualification_id"] = str(
@@ -151,7 +162,7 @@ def human_resource_dashboard(request):
                                 education_qualifications_list.append(
                                     education_qualification_map)
                             staff_map["education_qualifications_list"] = education_qualifications_list
-                            staff_training_records = staff.staff_training_records.all()
+                            staff_training_records = staff.staff_training_records.all().order_by('-id')
                             for staff_training_record in staff_training_records:
                                 staff_training_record_map = {}
                                 staff_training_record_map["training_record_id"] = str(
@@ -169,7 +180,7 @@ def human_resource_dashboard(request):
                                 staff_training_records_list.append(
                                     staff_training_record_map)
                             staff_map["staff_training_records_list"] = staff_training_records_list
-                            staff_disciplinary_records = staff.staff_disciplinary_records.all()
+                            staff_disciplinary_records = staff.staff_disciplinary_records.all().order_by('-id')
                             for staff_disciplinary_record in staff_disciplinary_records:
                                 staff_disciplinary_record_map = {}
                                 staff_disciplinary_record_map["staff_disciplinary_record_id"] = str(
@@ -191,7 +202,7 @@ def human_resource_dashboard(request):
                                 staff_disciplinary_records_list.append(staff_disciplinary_record_map)
                             staff_map["staff_disciplinary_records_list"] = staff_disciplinary_records_list
                             #end of extra data points
-                            staff_leaves = staff.staff_leave_instances.all()
+                            staff_leaves = staff.staff_leave_instances.all().order_by('-id')
                             for staff_leave in staff_leaves:
                                 if staff_leave.recycle_bin == False:
                                     staff_leave_map = {}
@@ -225,7 +236,7 @@ def human_resource_dashboard(request):
                                     #print(staff_leave_map)
                                     staff_leaves_list.append(staff_leave_map)
                             staff_map["staff_leaves_list"] = staff_leaves_list
-                            staff_deduction_schemes = staff.staff_deduction_schemes.all()
+                            staff_deduction_schemes = staff.staff_deduction_schemes.all().order_by('-id')
                             for staff_deduction_scheme in staff_deduction_schemes:
                                 staff_deduction_scheme_map = {}
                                 staff_deduction_scheme_map["staff_deduction_scheme_id"] = str(staff_deduction_scheme.id)
@@ -240,7 +251,7 @@ def human_resource_dashboard(request):
                                     staff_deduction_schemes_list.append(
                                         staff_deduction_scheme_map)  # 
                             staff_map["staff_deduction_schemes_list"] = staff_deduction_schemes_list
-                            staff_bonus_schemes = staff.staff_bonus_schemes.all()
+                            staff_bonus_schemes = staff.staff_bonus_schemes.all().order_by('-id')
                             for staff_bonus_scheme in staff_bonus_schemes:
                                 staff_bonus_scheme_map = {}
                                 staff_bonus_scheme_map["staff_bonus_scheme_id"] = str(staff_bonus_scheme.id)
@@ -261,7 +272,7 @@ def human_resource_dashboard(request):
                             company_branch_staffs_list.append(staff_map)
                     branch_map["branch_staff_profiles"] = company_branch_staffs_list
                     payroll_sheets_list = []
-                    payroll_sheets = branch.branch_payroll_sheets.all()
+                    payroll_sheets = branch.branch_payroll_sheets.all().order_by('-id')
                     for payroll_sheet in payroll_sheets:
                         if payroll_sheet.recycle_bin == False:
                             payroll_sheet_map = {}
@@ -298,14 +309,14 @@ def human_resource_dashboard(request):
                             payroll_sheet_map["last_updated_on"] = datetime.strftime(
                                 payroll_sheet.last_updated_on, date_format) if payroll_sheet.last_updated_on is not None else ""
                             payroll_instances_list = []
-                            payroll_instances = payroll_sheet.staff_payroll_items.all()
+                            payroll_instances = payroll_sheet.staff_payroll_items.all().order_by('-id')
                             for payroll_instance in payroll_instances:
                                 if payroll_instance.recycle_bin == False:
                                     payroll_instance_map = {}
                                     payroll_instance_map["payroll_instance_id"] = str(payroll_instance.id)
                                     payroll_instance_map["staff_id"] = str(
                                         payroll_instance.staff_profile.id)
-                                    deduction_instances = payroll_instance.deduction_instance.all()
+                                    deduction_instances = payroll_instance.deduction_instance.all().order_by('-id')
                                     deduction_instances_list = []
                                     for deduction_instance in deduction_instances:
                                         if deduction_instance.recycle_bin == False:
@@ -334,7 +345,7 @@ def human_resource_dashboard(request):
                                             deduction_instances_list.append(deduction_instance_map)
                                     payroll_instance_map["deduction_instances_list"] = deduction_instances_list
                                     payroll_instance_map["gross_salary"] = payroll_instance.gross_salary
-                                    bonus_instances = payroll_instance.bonus_instance.all()
+                                    bonus_instances = payroll_instance.bonus_instance.all().order_by('-id')
                                     bonus_instances_list = []
                                     for bonus_instance in bonus_instances:
                                         if bonus_instance.recycle_bin == False:
@@ -413,7 +424,7 @@ def human_resource_dashboard(request):
                             payroll_sheets_list.append(payroll_sheet_map)
                     branch_map["payroll_sheets_list"] = payroll_sheets_list
                     company_branches_list.append(branch_map)
-            staff_positions = company_profile.company_staff_positions.all()
+            staff_positions = company_profile.company_staff_positions.all().order_by('-id')
             for position in staff_positions:
                 if position.recycle_bin == False:
                     staff_position_map ={}
@@ -426,7 +437,7 @@ def human_resource_dashboard(request):
                     staff_position_map["last_updated_on"] = datetime.strftime(
                         position.last_updated_on, date_format) if position.last_updated_on is not None else ""
                     staff_positions_list.append(staff_position_map)
-            deductions = company_profile.company_deductions.all()
+            deductions = company_profile.company_deductions.all().order_by('-id')
             for deduction in deductions:
                 if deduction.recycle_bin == False:
                     deduction_map = {}
@@ -455,7 +466,7 @@ def human_resource_dashboard(request):
                         deduction.last_updated_on, date_format) if deduction.last_updated_on is not None else ""
                     deductions_list.append(deduction_map)
             #bonuses
-            bonuses = company_profile.company_bonuses.all()
+            bonuses = company_profile.company_bonuses.all().order_by('-id')
             for bonus in bonuses:
                 if bonus.recycle_bin == False:
                     bonus_map = {}
@@ -485,7 +496,7 @@ def human_resource_dashboard(request):
                     bonus_map["last_updated_on"] = datetime.strftime(
                         bonus.last_updated_on, date_format) if bonus.last_updated_on is not None else ""
                     bonuses_list.append(bonus_map)
-            work_shifts = company_profile.company_work_shifts.all()
+            work_shifts = company_profile.company_work_shifts.all().order_by('-id')
             for work_shift in work_shifts:
                 if work_shift.recycle_bin == False:
                     work_shift_map = {}
@@ -494,7 +505,7 @@ def human_resource_dashboard(request):
                     work_shift_map["shift_hours_start"] = work_shift.shift_hours_start
                     work_shift_map["shift_hours_end"] = work_shift.shift_hours_end
                     work_shift_map["shift_description"] = work_shift.shift_description
-                    working_days = work_shift.workday_shifts.all()
+                    working_days = work_shift.workday_shifts.all().order_by('-id')
                     working_days_list = []
                     for working_day in working_days:
                         if working_day.recycle_bin == False:
@@ -522,6 +533,7 @@ def human_resource_dashboard(request):
             payload["work_shifts_list"] = work_shifts_list
             payload["company_departments_list"] = company_departments_list
             payload["company_branches_list"] = company_branches_list
+            payload["company_profile_map"] = company_profile_map
             #print(staff_positions_list)
             return Response({"message": "true", "payload": payload}, status=200)
         else:
@@ -557,6 +569,7 @@ def edit_staff_profile(request):
         country_name = request.data["country_name"]
         identification_number = request.data["identification_number"]
         phone_number = request.data["phone_number"]
+        personal_email = request.data["personal_email"]
         staff_title = request.data["staff_title"]
         employment_start_date = datetime.strptime(
             request.data["employment_start_date"], date_format).strftime("%Y-%m-%d") if len(request.data["employment_start_date"]) > 0 else None
@@ -567,6 +580,7 @@ def edit_staff_profile(request):
         has_read_write_priviledges = True if request.data["has_read_write_priviledges"] == "true" else False
         kra_pin = request.data["kra_pin"]
         staff_additional_info = request.data["staff_additional_info"]
+        type_of_employment = request.data["type_of_employment"]
         active_user = request.user
         staff_profile_to_edit = StaffProfile.objects.get(user=active_user)#active_user
         if is_self_edit == "true":
@@ -577,12 +591,12 @@ def edit_staff_profile(request):
                                                         'last_name': last_name, 'date_of_birth': date_of_birth,
                                                         'country_name': country_name, 'identification_number': identification_number, 'phone_number': phone_number,
                                                         'staff_title':staff_title,'employment_start_date':employment_start_date,'employment_end_date':employment_end_date,
-                                                          'emergency_contact_phone': emergency_contact_phone, 'kra_pin': kra_pin, 'staff_additional_info': staff_additional_info
+                                                          'emergency_contact_phone': emergency_contact_phone, 'kra_pin': kra_pin, 'staff_additional_info': staff_additional_info, 'personal_email': personal_email, 'type_of_employment': type_of_employment
                                                         })
             else:
                 staff_profile_serializer = StaffProfileSerializer(
-                    instance=staff_profile_to_edit, data={'date_of_birth': date_of_birth,
-                                                          'country_name': country_name, 'phone_number': phone_number,
+                    instance=staff_profile_to_edit, data={'personal_email':personal_email,
+                                                          'phone_number': phone_number,
                                                           'emergency_contact_phone': emergency_contact_phone,
                                                           })
             if staff_profile_serializer.is_valid():
@@ -612,7 +626,7 @@ def edit_staff_profile(request):
                                                         'last_name': last_name, 'date_of_birth': date_of_birth,
                                                         'country_name': country_name, 'identification_number': identification_number, 'phone_number': phone_number,
                                                         'staff_title': staff_title, 'employment_start_date': employment_start_date, 'employment_end_date': employment_end_date,
-                                                          'emergency_contact_phone': emergency_contact_phone, 'is_head_of_department': is_head_of_department, 'has_read_write_priviledges': has_read_write_priviledges, 'kra_pin': kra_pin, 'staff_additional_info': staff_additional_info
+                                                          'emergency_contact_phone': emergency_contact_phone, 'is_head_of_department': is_head_of_department, 'has_read_write_priviledges': has_read_write_priviledges, 'kra_pin': kra_pin, 'staff_additional_info': staff_additional_info, 'personal_email': personal_email, 'type_of_employment': type_of_employment
                                                         })
                 if staff_profile_serializer.is_valid():
                     staff_profile_serializer.save()
@@ -625,9 +639,38 @@ def edit_staff_profile(request):
                     return Response({"message": "Error editing staff profile!"}, status=406)
             else:
                 return Response({"message": "You are unauthorised to perform this action"}, status=401)
+    except: #Exception as e:
+        #print(e)
+        return Response({"message": "Error editing staff profile"}, status=500)
+    
+@api_view(['POST'])
+@authentication_classes([TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def edit_staff_detail_mini(request):  
+    date_format = '%d/%m/%Y'
+    active_user = request.user
+    try:
+        staff_id_to_edit = request.data["staff_id_to_edit"]
+        personal_email = request.data["personal_email"]
+        phone_number = request.data["phone_number"]
+        emergency_contact_phone = request.data["emergency_contact_phone"]
+        staff_profile_to_edit = StaffProfile.objects.get(
+            user=active_user)  # active_user
+        staff_profile_serializer = StaffProfileSerializer(
+                    instance=staff_profile_to_edit, data={'personal_email':personal_email,
+                                                          'phone_number': phone_number,
+                                                          'emergency_contact_phone': emergency_contact_phone,
+                                                          })
+        if staff_profile_serializer.is_valid():
+            staff_profile_serializer.save()
+            return Response({"message": "You have successfully edited your profile"}, status=200)
+        else:
+            print(staff_profile_serializer.errors)
+            print(personal_email)
+            return Response({"message": "Unable to edit your profile", }, status=406)
     except Exception as e:
         print(e)
-        return Response({"message": "Error editing staff profile"}, status=500)
+        return Response({"message": "Error editing your profile"}, status=500)
             
 @api_view(['POST'])
 @authentication_classes([TokenAuthentication])
@@ -1108,6 +1151,9 @@ def edit_staff_financial_info(request):
         nssf_number = request.data["nssf_number"]
         nssf_additional_info = request.data["nssf_additional_info"]
         basic_salary = request.data["basic_salary"]
+        bank_branch_name = request.data["bank_branch_name"]
+        bank_swift_code = request.data["bank_swift_code"]
+        bank_branch_code = request.data["bank_branch_code"]
         company_profile = CompanyProfile.objects.get(
             company_serial_number=company_serial_number)
         staff_profile = StaffProfile.objects.get(user=request.user)
@@ -1115,7 +1161,7 @@ def edit_staff_financial_info(request):
             id=int(staff_id_to_edit))
         if staff_profile.company_department.department_name == "human_resource_management" and staff_profile.is_head_of_department == True and staff_profile.has_read_write_priviledges == True and company_profile:
             serializers = StaffProfileSerializer(instance=staff_profile_to_edit, data={'banking_institution_name':banking_institution_name,
-                                                 'bank_account_name': bank_account_name, 'bank_account_number': bank_account_number, 'nhif_number': nhif_number, 'nhif_additional_info': nhif_additional_info, 'nssf_number': nssf_number, 'nssf_additional_info': nssf_additional_info, 'basic_salary': basic_salary})
+                                                 'bank_account_name': bank_account_name, 'bank_account_number': bank_account_number, 'nhif_number': nhif_number, 'nhif_additional_info': nhif_additional_info, 'nssf_number': nssf_number, 'nssf_additional_info': nssf_additional_info, 'basic_salary': basic_salary, "bank_branch_name": bank_branch_name, "bank_swift_code": bank_swift_code, "bank_branch_code": bank_branch_code})
             if serializers.is_valid():
                 serializers.save()
                 return Response({"message": "Financial details updated successfully", }, status=200)
@@ -1263,6 +1309,9 @@ def create_payroll_sheet(request):
                             #print(deduction_instance_serializer.errors)
                     # all deduction instances for this payroll sheet are created
                     #creating the payroll instance
+                    pro_rate_factor = payrollSheetInstance["prorate_factor"]
+                    #print(pro_rate_factor)
+                    is_prorated = True if payrollSheetInstance["is_prorated"] == "true" else False
                     gross_salary = payrollSheetInstance["gross_salary"]
                     commissions_total = payrollSheetInstance["commissions_total"]
                     payroll_sheet_total_commission_value += float(commissions_total.replace(',', ''))
@@ -1270,9 +1319,13 @@ def create_payroll_sheet(request):
                     net_salary = payrollSheetInstance["net_salary"]
                     payroll_sheet_total_net_pay_value += float(
                         net_salary.replace(',', ''))
-                    created_payroll_sheet_instance_serializer = StaffPayrollInstanceSerializer(data={'staff_profile':staff_on_payroll.id,'payroll_sheet':new_payroll_sheet.id,'deduction_instance':payroll_sheet_deduction_instances_ids_list,'gross_salary':gross_salary,'bonus_instance':payroll_sheet_bonus_instances_ids_list,'commissions_total':commissions_total,'net_salary':net_salary,'created_by': staff_profile.id, 'last_updated_by': staff_profile.id})
+                    created_payroll_sheet_instance_serializer = StaffPayrollInstanceSerializer(data={'staff_profile': staff_on_payroll.id, 'payroll_sheet': new_payroll_sheet.id, 'deduction_instance': payroll_sheet_deduction_instances_ids_list, 'gross_salary': gross_salary,
+                                                                                               'bonus_instance': payroll_sheet_bonus_instances_ids_list, 'commissions_total': commissions_total, 'net_salary': net_salary, 'created_by': staff_profile.id, 'last_updated_by': staff_profile.id, 'pro_rate_factor': pro_rate_factor, 'is_prorated': is_prorated})
                     if created_payroll_sheet_instance_serializer.is_valid():
                         created_payroll_sheet_instance_serializer.save()
+                    else:
+                        #print(created_payroll_sheet_instance_serializer.errors)
+                        pass
                 new_payroll_sheet.payroll_sheet_value = f'{payroll_sheet_value}'
                 new_payroll_sheet.payroll_sheet_total_net_pay_value = f'{payroll_sheet_total_net_pay_value}' 
                 new_payroll_sheet.payroll_sheet_total_bonus_value = f'{payroll_sheet_total_bonus_value}' 
@@ -1327,22 +1380,27 @@ def edit_payroll_sheet(request):
                     staff_on_payroll = StaffProfile.objects.get(
                         id=int(payrollSheetInstance["staff_id"]))
                     bonus_instance_list = payrollSheetInstance["bonus_instance_list"]
+                    payroll_instance_id = payrollSheetInstance["payroll_instance_id"]
+                    ##
+                    get_payroll_sheet_instance = None
+                    if len(payroll_instance_id) > 0:
+                        get_payroll_sheet_instance = StaffPayrollInstance.objects.get(id=int(payroll_instance_id))
+                        #delete bonus instances
+                        bonus_instances_data = get_payroll_sheet_instance.bonus_instance.all()
+                        for bonus_instance_detail in bonus_instances_data:
+                            bonus_instance_detail.delete()
+                        deduction_instances_data = get_payroll_sheet_instance.deduction_instance.all()
+                        for deduction_instance_detail in deduction_instances_data:
+                            deduction_instance_detail.delete()
+
+                    #else:
+                        
+                    ##
                     payroll_sheet_bonus_instances_ids_list = []
                     for bonus in bonus_instance_list:
-                        bonusInstanceExist = False
                         bonus_id = bonus["bonus_id"]
                         bonus_instance_value = bonus["bonus_instance_value"]
-                        bonus_instances_data = new_payroll_sheet.bonus_instance.all()
-                        existing_bonus_instance = None
-                        for bonus_instance_detail in bonus_instances_data:
-                            if bonus_instance_detail.bonus.id == int(bonus_id):
-                                bonusInstanceExist = True
-                                existing_bonus_instance = bonus_instance_detail
-                                break
-                        if bonusInstanceExist == True:
-                            bonus_instance_serializer = BonusInstanceSerializer(instance=existing_bonus_instance,data={'bonus_instance_value': bonus_instance_value,'last_updated_by': staff_profile.id})
-                        else:
-                            bonus_instance_serializer = BonusInstanceSerializer(data={'bonus': int(
+                        bonus_instance_serializer = BonusInstanceSerializer(data={'bonus': int(
                                 bonus_id), 'bonus_instance_value': bonus_instance_value, 'created_by': staff_profile.id, 'last_updated_by': staff_profile.id})
                         if bonus_instance_serializer.is_valid():
                             new_bonus_instance = bonus_instance_serializer.save()
@@ -1350,44 +1408,28 @@ def edit_payroll_sheet(request):
                                 new_bonus_instance.id)#will check to delete non_retained bonus instances
                             payroll_sheet_total_bonus_value += float(
                                 bonus_instance_value.replace(',', ''))
-                            # create bonus scheme if it does not exist
                             validBonusInstance = Bonus.objects.get(
                                 id=int(bonus_id))
                             staff_bonus_scheme, created = StaffBonusScheme.objects.get_or_create(
                                 staff_profile=staff_on_payroll, bonus=validBonusInstance)
-                    # all bonus instances for this payroll sheet are created
                     deduction_instance_list = payrollSheetInstance["deduction_instance_list"]
-                    # print(f'Deduction instance list: {deduction_instance_list}')
                     payroll_sheet_deduction_instances_ids_list = []
                     for deduction in deduction_instance_list:
-                        deductionInstanceExist = False
                         deduction_id = deduction["deduction_id"]
                         deduction_instance_value = deduction["deduction_value"]
-                        deduction_instances_data = new_payroll_sheet.deduction_instance.all()
-                        existing_deduction_instance = None
-                        for deduction_instance_detail in deduction_instances_data:
-                            if deduction_instance_detail.id == int(deduction_id):
-                                deductionInstanceExist = True
-                                existing_deduction_instance = deduction_instance_detail
-                                break
-                            if deductionInstanceExist == True:
-                                deduction_instance_serializer = DeductionInstanceSerializer(instance=existing_deduction_instance,
-                                data={'deduction_instance_value': deduction_instance_value, 'created_by': staff_profile.id,})
-                            else:
-                                deduction_instance_serializer = DeductionInstanceSerializer(
+                        deduction_instance_serializer = DeductionInstanceSerializer(
                                     data={'deduction': int(deduction_id), 'deduction_instance_value': deduction_instance_value, 'created_by': staff_profile.id, 'last_updated_by': staff_profile.id})
-                            if deduction_instance_serializer.is_valid():
-                                new_deduction_instance = deduction_instance_serializer.save()
-                                payroll_sheet_deduction_instances_ids_list.append(
-                                    new_deduction_instance.id)
-                                payroll_sheet_total_deduction_value += float(
-                                    deduction_instance_value.replace(',', ''))
-                                # create deduction scheme if it does not exist
-                                validDeductionInstance = Deduction.objects.get(
-                                    id=int(deduction_id))
-                                staff_deduction_scheme, created = StaffDeductionScheme.objects.get_or_create(
-                                    staff_profile=staff_on_payroll, deduction=validDeductionInstance)
-                    payroll_instance_id = payrollSheetInstance["payroll_instance_id"]
+                        if deduction_instance_serializer.is_valid():
+                            new_deduction_instance = deduction_instance_serializer.save()
+                            payroll_sheet_deduction_instances_ids_list.append(
+                                new_deduction_instance.id)
+                            payroll_sheet_total_deduction_value += float(
+                                deduction_instance_value.replace(',', ''))
+                            # create deduction scheme if it does not exist
+                            validDeductionInstance = Deduction.objects.get(
+                                id=int(deduction_id))
+                            staff_deduction_scheme, created = StaffDeductionScheme.objects.get_or_create(
+                                staff_profile=staff_on_payroll, deduction=validDeductionInstance)
                     gross_salary = payrollSheetInstance["gross_salary"]
                     commissions_total = payrollSheetInstance["commissions_total"]
                     payroll_sheet_total_commission_value += float(
@@ -1398,12 +1440,9 @@ def edit_payroll_sheet(request):
                         net_salary.replace(',', ''))
                     is_prorated = True if payrollSheetInstance["is_prorated"] == "true" else False
                     pro_rate_factor = payrollSheetInstance["pro_rate_factor"]
-                    #get the payrollsheetinstance instance to edit
-                    if len(payroll_instance_id) > 0:
-
-                        get_payroll_sheet_instance = StaffPayrollInstance.objects.get(id=int(payroll_instance_id))
+                    if get_payroll_sheet_instance is not None:
                         edited_payroll_sheet_instance_serializer = StaffPayrollInstanceSerializer(instance=get_payroll_sheet_instance,data={'deduction_instance': payroll_sheet_deduction_instances_ids_list,
-                                                                                                'gross_salary': gross_salary, 'bonus_instance': payroll_sheet_bonus_instances_ids_list, 'commissions_total': commissions_total,'is_prorated':is_prorated,'pro_rate_factor':pro_rate_factor, 'net_salary': net_salary, 'last_updated_by': staff_profile.id})
+                                                                        'gross_salary': gross_salary, 'bonus_instance': payroll_sheet_bonus_instances_ids_list, 'commissions_total': commissions_total,'is_prorated':is_prorated,'pro_rate_factor':pro_rate_factor, 'net_salary': net_salary, 'last_updated_by': staff_profile.id})
                         if edited_payroll_sheet_instance_serializer.is_valid():
                             edited_payroll_sheet_instance_serializer.save()
                     else:
@@ -1419,12 +1458,218 @@ def edit_payroll_sheet(request):
                 # successful creation
                 return Response({"message": "Payroll sheet edited successfully", }, status=200)
             else:
-                #print(payroll_sheet_serializer.errors)
+                # print(payroll_sheet_serializer.errors)
                 return Response({"message": "Unable to edit payroll sheet", }, status=406)
         else:
             return Response({"message": "You are unauthorised to perform this action", }, status=401)
-    except: #Exception as e:
-        #print(e)
+    except Exception as e:
+        print(e)
         return Response({"message": "Error editing payroll sheet", }, status=500)
+
+
+
+@api_view(['POST'])
+@authentication_classes([TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def get_my_profile_details(request):
+    active_user = request.user
+    company_serial_number = request.data["serial_number"]
+    try:
+        company_profile = CompanyProfile.objects.get(
+            company_serial_number=company_serial_number)
+        if company_profile:
+            active_staff_profile_data = get_staff_profile_data(active_user)
+            return Response({"message": "true", "payload": active_staff_profile_data}, status=200)
+        else:
+            return Response({"message": "false", }, status=406)
+    except:
+        return Response({"message": "false", }, status=500)
+
+@api_view(['POST'])
+@authentication_classes([TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def change_password(request):  
+    date_format = '%d/%m/%Y'
+    active_user = request.user
+    try:
+        company_serial_number = request.data["serial_number"]
+        new_password = request.data["new_password"]
+        active_user.set_password(new_password)
+        active_user.save()
+        return Response({"message": "Password changed successfully", }, status=200)
+    except:
+        return Response({"message": "Error changing password", }, status=500)
+
+#delete sections
+@api_view(['POST'])
+@authentication_classes([TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def delete_bonus(request): 
+    active_user = request.user
+    bonus_id = request.data["bonus_id"]
+    company_serial_number = request.data["serial_number"]
+    try:
+        company_profile = CompanyProfile.objects.get(
+            company_serial_number=company_serial_number)
+        staff_profile = StaffProfile.objects.get(user=request.user)
+        if staff_profile.company_department.department_name == "human_resource_management" and staff_profile.is_head_of_department == True and staff_profile.has_read_write_priviledges == True and company_profile:
+            bonus_to_delete = Bonus.objects.get(id=int(bonus_id))
+            if bonus_to_delete.recycle_bin != True:
+                bonus_to_delete.recycle_bin= True
+                bonus_to_delete.save()
+                return Response({"message": "Bonus deleted successfully", }, status=200)
+            else:
+                bonus_to_delete.delete()
+                return Response({"message": "You have permanently deleted bonus item successfully", }, status=200)
+    except:
+        return Response({"message": "Error deleting bonus", }, status=500)
+    
+
+@api_view(['POST'])
+@authentication_classes([TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def delete_deduction(request):
+    active_user = request.user
+    deduction_id = request.data["deduction_id"]
+    company_serial_number = request.data["serial_number"]
+    try:
+        company_profile = CompanyProfile.objects.get(
+            company_serial_number=company_serial_number)
+        staff_profile = StaffProfile.objects.get(user=request.user)
+        if staff_profile.company_department.department_name == "human_resource_management" and staff_profile.is_head_of_department == True and staff_profile.has_read_write_priviledges == True and company_profile:
+            deduction_to_delete = Deduction.objects.get(id=int(deduction_id))
+            if deduction_to_delete.recycle_bin != True:
+                deduction_to_delete.recycle_bin = True
+                deduction_to_delete.save()
+                return Response({"message": "Deduction deleted successfully", }, status=200)
+            else:
+                deduction_to_delete.delete()
+                return Response({"message": "You have permanently deleted deduction item successfully", }, status=200)
+    except:
+        return Response({"message": "Error deleting deduction", }, status=500)
+    
+
+@api_view(['POST'])
+@authentication_classes([TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def delete_payroll_sheet(request):
+    active_user = request.user
+    payroll_sheet_id = request.data["payroll_sheet_id"]
+    company_serial_number = request.data["serial_number"]
+    try:
+        company_profile = CompanyProfile.objects.get(
+            company_serial_number=company_serial_number)
+        staff_profile = StaffProfile.objects.get(user=request.user)
+        if staff_profile.company_department.department_name == "human_resource_management" and staff_profile.is_head_of_department == True and staff_profile.has_read_write_priviledges == True and company_profile:
+            payroll_sheet_to_delete = PayrollSheet.objects.get(id=int(payroll_sheet_id))
+            if payroll_sheet_to_delete.recycle_bin != True:
+                payroll_sheet_to_delete.recycle_bin = True
+                payroll_sheet_to_delete.save()
+                return Response({"message": "Payroll sheet deleted successfully", }, status=200)
+            else:
+                payroll_sheet_to_delete.delete()
+                return Response({"message": "You have permanently deleted payroll sheet successfully", }, status=200)
+    except:
+        return Response({"message": "Error deleting payroll_sheet", }, status=500)
+    
+
+@api_view(['POST'])
+@authentication_classes([TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def delete_staff_position(request):
+    active_user = request.user
+    staff_position_id = request.data["staff_position_id"]
+    company_serial_number = request.data["serial_number"]
+    try:
+        company_profile = CompanyProfile.objects.get(
+            company_serial_number=company_serial_number)
+        staff_profile = StaffProfile.objects.get(user=active_user)
+        if staff_profile.company_department.department_name == "human_resource_management" and staff_profile.is_head_of_department == True and staff_profile.has_read_write_priviledges == True and company_profile:
+            staff_position_to_delete = staffPosition.objects.get(id=int(staff_position_id))
+            if staff_position_to_delete.recycle_bin != True:
+                staff_position_to_delete.recycle_bin = True
+                staff_position_to_delete.save()
+                return Response({"message": "Staff position deleted successfully", }, status=200)
+            else:
+                staff_position_to_delete.delete()
+                return Response({"message": "You have permanently deleted staff position successfully", }, status=200)
+    except:# Exception as e:
+        #print(e)
+        return Response({"message": "Error deleting staff position", }, status=500)
+    
+
+@api_view(['POST'])
+@authentication_classes([TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def delete_staff_profile(request):
+    active_user = request.user
+    staff_profile_id = request.data["staff_profile_id"]
+    company_serial_number = request.data["serial_number"]
+    try:
+        company_profile = CompanyProfile.objects.get(
+            company_serial_number=company_serial_number)
+        staff_profile = StaffProfile.objects.get(user=active_user)
+        if staff_profile.company_department.department_name == "human_resource_management" and staff_profile.is_head_of_department == True and staff_profile.has_read_write_priviledges == True and company_profile:
+            staff_profile_to_delete = StaffProfile.objects.get(
+                id=int(staff_profile_id))
+            if staff_profile_to_delete.recycle_bin != True:
+                staff_profile_to_delete.recycle_bin = True
+                staff_profile_to_delete.save()
+                return Response({"message": "Staff profile deleted successfully", }, status=200)
+            else:
+                staff_profile_to_delete.delete()
+                return Response({"message": "You have permanently deleted staff profile successfully", }, status=200)
+    except:
+        return Response({"message": "Error deleting staff profile", }, status=500)
+
+
+@api_view(['POST'])
+@authentication_classes([TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def delete_work_shift(request):
+    active_user = request.user
+    work_shift_id = request.data["work_shift_id"]
+    company_serial_number = request.data["serial_number"]
+    try:
+        company_profile = CompanyProfile.objects.get(
+            company_serial_number=company_serial_number)
+        staff_profile = StaffProfile.objects.get(user=active_user)
+        if staff_profile.company_department.department_name == "human_resource_management" and staff_profile.is_head_of_department == True and staff_profile.has_read_write_priviledges == True and company_profile:
+            work_shift_to_delete = WorkShift.objects.get(
+                id=int(work_shift_id))
+            if work_shift_to_delete.recycle_bin != True:
+                work_shift_to_delete.recycle_bin = True
+                work_shift_to_delete.save()
+                return Response({"message": "Work shift deleted successfully", }, status=200)
+            else:
+                work_shift_to_delete.delete()
+                return Response({"message": "You have permanently deleted work shift successfully", }, status=200)
+    except:
+        return Response({"message": "Error deleting work shift", }, status=500)
+    
+@api_view(['POST'])
+@authentication_classes([TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def delete_staff_leave(request):
+    active_user = request.user
+    staff_leave_id = request.data["staff_leave_id"]
+    company_serial_number = request.data["serial_number"]
+    try:
+        company_profile = CompanyProfile.objects.get(
+            company_serial_number=company_serial_number)
+        staff_profile = StaffProfile.objects.get(user=active_user)
+        if staff_profile.company_department.department_name == "human_resource_management" and staff_profile.is_head_of_department == True and staff_profile.has_read_write_priviledges == True and company_profile:
+            staff_leave_to_delete = StaffLeave.objects.get(
+                id=int(staff_leave_id))
+            if staff_leave_to_delete.recycle_bin != True:
+                staff_leave_to_delete.recycle_bin = True
+                staff_leave_to_delete.save()
+                return Response({"message": "Staff leave deleted successfully", }, status=200)
+            else:
+                staff_leave_to_delete.delete()
+                return Response({"message": "You have permanently deleted staff leave successfully", }, status=200)
+    except Exception as e:
+        print(e)
+        return Response({"message": "Error deleting staff leave", }, status=500)
 
 

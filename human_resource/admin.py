@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from human_resource.models import Bonus, Deduction, DeductionInstance, PayrollSheet, StaffBonusScheme, StaffDeductionScheme, StaffLeave, StaffPayrollInstance, StaffProfile, TimeSheet, WorkShift, WorkingDays, staffPosition
+from human_resource.models import Bonus, BonusInstance, Deduction, DeductionInstance, PayrollSheet, StaffBonusScheme, StaffDeductionScheme, StaffLeave, StaffPayrollInstance, StaffProfile, TimeSheet, WorkShift, WorkingDays, staffPosition
 
 # Register your models here.
 
@@ -67,4 +67,9 @@ class StaffPayrollInstanceAdmin(admin.ModelAdmin):
 
 @admin.register(DeductionInstance)
 class DeductionInstanceAdmin(admin.ModelAdmin):
+    list_display = ('id',)
+
+
+@admin.register(BonusInstance)
+class BonusInstanceAdmin(admin.ModelAdmin):
     list_display = ('id',)
